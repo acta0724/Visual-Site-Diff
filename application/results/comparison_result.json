@@ -1,0 +1,27 @@
+{
+  "image1_path": "test/flower/IMG_3575.JPEG",
+  "image2_path": "test/flower/IMG_3576.JPEG",
+  "num_features_1": 1000,
+  "num_features_2": 1000,
+  "num_matches": 100,
+  "similarity_score": 0.1,
+  "homography": [
+    [
+      0.9484568016878002,
+      -0.013023381462413627,
+      130.97602840325814
+    ],
+    [
+      -0.002933599705044706,
+      0.9438664754470295,
+      66.00386067272768
+    ],
+    [
+      -8.21142861439355e-06,
+      -1.3396107631945854e-05,
+      0.9999999999999999
+    ]
+  ],
+  "inlier_matches": 99,
+  "num_differences": 11
+}
