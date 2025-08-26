@@ -111,15 +111,17 @@ class ImageDifferenceDetector:
         return homography, mask
     
     def detect_differences(self, img1: np.ndarray, img2: np.ndarray, 
-                          homography: np.ndarray = None) -> np.ndarray:
+                          homography: np.ndarray = None) -> tuple:
         if homography is not None:
-            h, w = img2.shape
-            aligned_img1 = cv2.warpPerspective(img1, homography, (w, h))
+            h, w = img2.shape[:2]
+            aligned_img1 = cv2.warpPerspective(img1, homography, (w, h), borderValue=(0, 255, 0))
         else:
             aligned_img1 = img1
         
-        # 差分計算
-        diff = cv2.absdiff(aligned_img1, img2)
+        # グレースケール変換して差分計算
+        gray_aligned = cv2.cvtColor(aligned_img1, cv2.COLOR_BGR2GRAY) if len(aligned_img1.shape) == 3 else aligned_img1
+        gray_img2 = cv2.cvtColor(img2, cv2.COLOR_BGR2GRAY) if len(img2.shape) == 3 else img2
+        diff = cv2.absdiff(gray_aligned, gray_img2)
         
         # 設定可能な閾値で二値化
         _, binary_diff = cv2.threshold(diff, self.diff_threshold, 255, cv2.THRESH_BINARY)
@@ -171,11 +173,11 @@ class ImageDifferenceDetector:
                 result['homography'] = homography
                 result['inlier_matches'] = int(np.sum(mask))
                 
-                diff_img, aligned_img1 = self.detect_differences(proc_img1, proc_img2, homography)
+                diff_img, aligned_img1_color = self.detect_differences(img1, img2, homography)
                 contours = self.find_difference_contours(diff_img)
                 
                 result['difference_image'] = diff_img
-                result['aligned_image'] = aligned_img1
+                result['aligned_image'] = aligned_img1_color
                 result['difference_contours'] = contours
                 result['num_differences'] = len(contours)
         
@@ -213,9 +215,13 @@ def save_results(result: dict, output_dir: str):
     
     # 差分をハイライトした画像の保存
     if 'difference_contours' in result and result['difference_contours']:
-        img2 = cv2.imread(result['image2_path'])
-        img_with_diff = img2.copy()
-        cv2.drawContours(img_with_diff, result['difference_contours'], -1, (0, 255, 0), -1)
+        # 位置調整後のカラー画像を使用
+        if 'aligned_image' in result and result['aligned_image'] is not None:
+            img_with_diff = result['aligned_image'].copy()
+        else:
+            img2 = cv2.imread(result['image2_path'])
+            img_with_diff = img2.copy()
+        cv2.drawContours(img_with_diff, result['difference_contours'], -1, (0, 0, 255), -1)
         highlight_path = output_path / 'differences_highlighted.png'
         cv2.imwrite(str(highlight_path), img_with_diff)
         print(f"差分ハイライト画像を保存: {highlight_path}")
