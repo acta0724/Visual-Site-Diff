@@ -215,7 +215,7 @@ def save_results(result: dict, output_dir: str):
     if 'difference_contours' in result and result['difference_contours']:
         img2 = cv2.imread(result['image2_path'])
         img_with_diff = img2.copy()
-        cv2.drawContours(img_with_diff, result['difference_contours'], -1, (0, 255, 0), 2)
+        cv2.drawContours(img_with_diff, result['difference_contours'], -1, (0, 255, 0), -1)
         highlight_path = output_path / 'differences_highlighted.png'
         cv2.imwrite(str(highlight_path), img_with_diff)
         print(f"差分ハイライト画像を保存: {highlight_path}")
