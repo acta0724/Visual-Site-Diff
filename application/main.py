@@ -140,6 +140,118 @@ class ImageDifferenceDetector:
         filtered_contours = [cnt for cnt in contours if cv2.contourArea(cnt) > self.min_area]
         return filtered_contours
     
+    def detect_object_boxes(self, contours: List) -> List:
+        """
+        変化領域の境界ボックス（物体検知風）を計算
+        
+        Args:
+            contours: 差分輪郭のリスト
+            
+        Returns:
+            境界ボックスのリスト [(x, y, w, h), ...]
+        """
+        bounding_boxes = []
+        
+        for contour in contours:
+            # 各輪郭の境界ボックスを計算
+            x, y, w, h = cv2.boundingRect(contour)
+            
+            # 小さすぎるボックスは除外
+            if w * h > self.min_area:
+                # ボックスを少し拡張（パディング）
+                padding = max(5, min(w, h) // 10)
+                x = max(0, x - padding)
+                y = max(0, y - padding)
+                w = w + 2 * padding
+                h = h + 2 * padding
+                
+                bounding_boxes.append((x, y, w, h))
+        
+        # 重複するボックスをマージ
+        merged_boxes = self.merge_overlapping_boxes(bounding_boxes)
+        
+        return merged_boxes
+    
+    def merge_overlapping_boxes(self, boxes: List) -> List:
+        """
+        重複する境界ボックスをマージ
+        
+        Args:
+            boxes: 境界ボックスのリスト [(x, y, w, h), ...]
+            
+        Returns:
+            マージされた境界ボックスのリスト
+        """
+        if not boxes:
+            return []
+        
+        # IoU (Intersection over Union) を使って重複判定
+        merged = []
+        used = [False] * len(boxes)
+        
+        for i, box1 in enumerate(boxes):
+            if used[i]:
+                continue
+                
+            x1, y1, w1, h1 = box1
+            current_box = [x1, y1, x1 + w1, y1 + h1]  # (x1, y1, x2, y2) 形式
+            
+            for j, box2 in enumerate(boxes[i+1:], i+1):
+                if used[j]:
+                    continue
+                    
+                x2, y2, w2, h2 = box2
+                box2_coords = [x2, y2, x2 + w2, y2 + h2]
+                
+                # IoU計算
+                if self.calculate_iou(current_box, box2_coords) > 0.3:  # 30%以上重複でマージ
+                    # ボックスを拡張してマージ
+                    current_box[0] = min(current_box[0], box2_coords[0])
+                    current_box[1] = min(current_box[1], box2_coords[1])
+                    current_box[2] = max(current_box[2], box2_coords[2])
+                    current_box[3] = max(current_box[3], box2_coords[3])
+                    used[j] = True
+            
+            # (x, y, w, h) 形式に戻す
+            merged.append((
+                current_box[0],
+                current_box[1], 
+                current_box[2] - current_box[0],
+                current_box[3] - current_box[1]
+            ))
+            used[i] = True
+        
+        return merged
+    
+    def calculate_iou(self, box1, box2):
+        """
+        IoU (Intersection over Union) を計算
+        
+        Args:
+            box1, box2: (x1, y1, x2, y2) 形式の境界ボックス
+            
+        Returns:
+            IoU値 (0.0-1.0)
+        """
+        # 交差領域の計算
+        x1 = max(box1[0], box2[0])
+        y1 = max(box1[1], box2[1])
+        x2 = min(box1[2], box2[2])
+        y2 = min(box1[3], box2[3])
+        
+        if x2 <= x1 or y2 <= y1:
+            return 0.0
+        
+        intersection = (x2 - x1) * (y2 - y1)
+        
+        # 各ボックスの面積
+        area1 = (box1[2] - box1[0]) * (box1[3] - box1[1])
+        area2 = (box2[2] - box2[0]) * (box2[3] - box2[1])
+        
+        # IoU計算
+        union = area1 + area2 - intersection
+        return intersection / union if union > 0 else 0.0
+    
     def compare_images(self, img1_path: str, img2_path: str) -> dict:
         img1 = cv2.imread(img1_path)
         img2 = cv2.imread(img2_path)
@@ -176,10 +288,15 @@ class ImageDifferenceDetector:
                 diff_img, aligned_img1_color = self.detect_differences(img1, img2, homography)
                 contours = self.find_difference_contours(diff_img)
                 
+                # 物体検知風の境界ボックスを計算
+                bounding_boxes = self.detect_object_boxes(contours)
+                
                 result['difference_image'] = diff_img
                 result['aligned_image'] = aligned_img1_color
                 result['difference_contours'] = contours
+                result['bounding_boxes'] = bounding_boxes
                 result['num_differences'] = len(contours)
+                result['num_objects'] = len(bounding_boxes)
         
         return result
 
@@ -225,6 +342,39 @@ def save_results(result: dict, output_dir: str):
         highlight_path = output_path / 'differences_highlighted.png'
         cv2.imwrite(str(highlight_path), img_with_diff)
         print(f"差分ハイライト画像を保存: {highlight_path}")
+    
+    # 物体検知風の境界ボックス付き画像を保存
+    if 'bounding_boxes' in result and result['bounding_boxes']:
+        # 位置調整後のカラー画像を使用
+        if 'aligned_image' in result and result['aligned_image'] is not None:
+            img_with_boxes = result['aligned_image'].copy()
+        else:
+            img2 = cv2.imread(result['image2_path'])
+            img_with_boxes = img2.copy()
+        
+        # 赤枠で境界ボックスを描画
+        for i, (x, y, w, h) in enumerate(result['bounding_boxes']):
+            # 赤枠を描画
+            cv2.rectangle(img_with_boxes, (x, y), (x + w, y + h), (0, 0, 255), 3)
+            
+            # ラベルを追加（物体検知風）
+            label = f"Change #{i+1}"
+            label_size = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.6, 2)[0]
+            
+            # ラベル背景を描画
+            cv2.rectangle(img_with_boxes, 
+                         (x, y - label_size[1] - 10), 
+                         (x + label_size[0] + 6, y), 
+                         (0, 0, 255), -1)
+            
+            # ラベルテキストを描画
+            cv2.putText(img_with_boxes, label, 
+                       (x + 3, y - 5), 
+                       cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
+        
+        detection_path = output_path / 'object_detection.png'
+        cv2.imwrite(str(detection_path), img_with_boxes)
+        print(f"物体検知画像を保存: {detection_path}")
 
 def main():
     parser = argparse.ArgumentParser(description='画像差分検出システム')
@@ -311,12 +461,17 @@ def main():
         if 'num_differences' in result:
             print(f"検出された差分領域数: {result['num_differences']}")
             
+            if 'num_objects' in result:
+                print(f"検出された変化物体数: {result['num_objects']}")
+            
             if result['num_differences'] == 0:
                 print("→ 有意な差分は検出されませんでした")
                 if args.verbose:
                     print("  (より敏感にするには --diff-threshold を小さくするか --min-area を小さくしてください)")
             else:
                 print(f"→ {result['num_differences']}個の差分領域を検出")
+                if 'num_objects' in result and result['num_objects'] > 0:
+                    print(f"→ {result['num_objects']}個の変化物体として分類")
         else:
             print("→ 位置合わせができませんでした（類似点が不足）")
         

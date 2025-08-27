@@ -132,14 +132,16 @@ def upload_files():
                 'num_matches': result.get('num_matches', 0),
                 'similarity_score': result.get('similarity_score', 0),
                 'inlier_matches': result.get('inlier_matches', 0),
-                'num_differences': result.get('num_differences', 0)
+                'num_differences': result.get('num_differences', 0),
+                'num_objects': result.get('num_objects', 0)
             },
             'images': {
                 'original1': f'/uploads/{session_id}/{filename1}',
                 'original2': f'/uploads/{session_id}/{filename2}',
                 'difference': f'/results/{session_id}/difference_image.png',
                 'aligned': f'/results/{session_id}/aligned_image.png',
-                'highlighted': f'/results/{session_id}/differences_highlighted.png'
+                'highlighted': f'/results/{session_id}/differences_highlighted.png',
+                'detection': f'/results/{session_id}/object_detection.png'
             }
         }
         
@@ -154,7 +156,7 @@ def save_results_web(result, output_dir):
     
     # JSON結果の保存（NumPy配列は除外）
     json_result = {k: v for k, v in result.items() 
-                   if k not in ['difference_image', 'aligned_image', 'difference_contours']}
+                   if k not in ['difference_image', 'aligned_image', 'difference_contours', 'bounding_boxes']}
     
     # ホモグラフィ行列をリストに変換
     if 'homography' in json_result and json_result['homography'] is not None:
@@ -187,6 +189,25 @@ def save_results_web(result, output_dir):
         cv2.drawContours(img_with_diff, result['difference_contours'], -1, (0, 0, 255), -1)
         highlight_path = output_path / 'differences_highlighted.png'
         cv2.imwrite(str(highlight_path), img_with_diff)
+    
+    # 物体検知画像の保存
+    if 'bounding_boxes' in result and result['bounding_boxes']:
+        import cv2
+        if 'aligned_image' in result and result['aligned_image'] is not None:
+            img_with_boxes = result['aligned_image'].copy()
+        else:
+            # フォールバック
+            img_with_boxes = cv2.imread(result['image2_path'])
+        
+        # バウンディングボックスを描画
+        for i, box in enumerate(result['bounding_boxes']):
+            x, y, w, h = box
+            cv2.rectangle(img_with_boxes, (x, y), (x + w, y + h), (0, 0, 255), 2)
+            cv2.putText(img_with_boxes, f'Object {i+1}', (x, y-10), 
+                       cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
+        
+        detection_path = output_path / 'object_detection.png'
+        cv2.imwrite(str(detection_path), img_with_boxes)
 
 @app.route('/uploads/<path:filename>')
 def uploaded_file(filename):

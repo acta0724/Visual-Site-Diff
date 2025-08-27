@@ -879,6 +879,10 @@
                     <span>検出された差分領域数:</span>
                     <span>${data.result.num_differences}</span>
                 </div>
+                <div class="stat-item">
+                    <span>検出された変化物体数:</span>
+                    <span>${data.result.num_objects || 0}</span>
+                </div>
             `;
             
             // 画像結果表示
@@ -902,6 +906,10 @@
                 <div class="result-item">
                     <h3>🔴 差分ハイライト</h3>
                     <img src="${data.images.highlighted}" alt="差分ハイライト画像">
+                </div>
+                <div class="result-item">
+                    <h3>🎯 物体検知</h3>
+                    <img src="${data.images.detection}" alt="物体検知画像">
                 </div>
             `;
             
