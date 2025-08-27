@@ -29,7 +29,8 @@
         }
 
         .header {
-            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            /* background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); */
+            background: #4facfe;
             color: white;
             padding: 30px;
             text-align: center;
@@ -128,7 +129,8 @@
         }
 
         .submit-btn {
-            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            /* background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); */
+            background: #4facfe;
             color: white;
             padding: 15px 30px;
             border: none;
@@ -149,7 +151,8 @@
         }
 
         .reset-btn {
-            background: linear-gradient(135deg, #ff7675 0%, #fd79a8 100%);
+            /* background: linear-gradient(135deg, #ff7675 0%, #fd79a8 100%); */
+            background: #ff7675;
             color: white;
             padding: 10px 20px;
             border: none;
@@ -358,8 +361,11 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>🔍 画像差分検出システム</h1>
-            <p>2つの画像を比較して差分を検出・可視化します</p>
+            <h1>画像差分検出システム</h1>
+            <!-- <p>2つの画像を比較して差分を検出・可視化します</p>
+            <small style="opacity: 0.8; font-size: 0.9em;">
+                💡 古い解析結果は自動的に削除されます（最新5件を保持）
+            </small> -->
         </div>
 
         <div class="upload-section">
@@ -431,7 +437,7 @@
                 <div class="error" id="errorMessage"></div>
                 
                 <button type="submit" class="submit-btn" id="submitBtn">
-                    🚀 差分検出を実行
+                    差分検出を実行
                 </button>
             </form>
 

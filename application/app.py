@@ -5,6 +5,8 @@
 
 import os
 import json
+import shutil
+import time
 from flask import Flask, render_template, request, jsonify, send_from_directory, url_for
 from werkzeug.utils import secure_filename
 from pathlib import Path
@@ -25,6 +27,39 @@ for folder in [UPLOAD_FOLDER, RESULTS_FOLDER]:
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
+def cleanup_old_sessions():
+    """古いセッションファイルを削除（最新5個を保持）"""
+    try:
+        # アップロードフォルダとリザルトフォルダの両方をクリーンアップ
+        for folder_path in [Path(UPLOAD_FOLDER), Path(RESULTS_FOLDER)]:
+            if not folder_path.exists():
+                continue
+                
+            # セッションフォルダを作成時刻でソート（新しい順）
+            session_dirs = []
+            for session_dir in folder_path.iterdir():
+                if session_dir.is_dir():
+                    try:
+                        # フォルダの作成時刻を取得
+                        creation_time = session_dir.stat().st_ctime
+                        session_dirs.append((creation_time, session_dir))
+                    except OSError:
+                        continue
+            
+            # 作成時刻で降順ソート（新しいものが先頭）
+            session_dirs.sort(reverse=True, key=lambda x: x[0])
+            
+            # 6個目以降（インデックス5以降）を削除
+            for _, old_dir in session_dirs[5:]:
+                try:
+                    shutil.rmtree(old_dir)
+                    print(f"削除しました: {old_dir}")
+                except OSError as e:
+                    print(f"削除に失敗: {old_dir}, エラー: {e}")
+                    
+    except Exception as e:
+        print(f"クリーンアップ中にエラー: {e}")
+
 @app.route('/')
 def index():
     return render_template('index.html')
@@ -42,6 +77,9 @@ def upload_files():
     
     if not (allowed_file(file1.filename) and allowed_file(file2.filename)):
         return jsonify({'error': '許可されていないファイル形式です'}), 400
+    
+    # 古いセッションをクリーンアップ（新しいセッション作成前に実行）
+    cleanup_old_sessions()
     
     # ユニークなセッションIDを生成
     session_id = str(uuid.uuid4())
@@ -193,6 +231,21 @@ def export_zip(session_id):
             'Content-Disposition': f'attachment; filename=image_diff_{session_id[:8]}.zip'
         }
     )
+
+@app.route('/cleanup')
+def manual_cleanup():
+    """手動でクリーンアップを実行"""
+    try:
+        cleanup_old_sessions()
+        return jsonify({
+            'success': True,
+            'message': '古いセッションファイルをクリーンアップしました'
+        })
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5001)
