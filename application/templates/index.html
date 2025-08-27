@@ -1,0 +1,717 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>画像差分検出システム</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            /* background: linear-gradient(135deg, #74b9ff 0%, #0984e3 100%); */
+            background: #FFFFFF;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+
+        .upload-section {
+            padding: 40px;
+        }
+
+        .upload-form {
+            display: grid;
+            gap: 20px;
+        }
+
+        .file-input-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .file-input {
+            border: 3px dashed #ddd;
+            border-radius: 10px;
+            padding: 30px;
+            text-align: center;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .file-input:hover {
+            border-color: #4facfe;
+            background-color: #f8f9ff;
+        }
+
+        .file-input input {
+            display: none;
+        }
+
+        .file-input label {
+            display: block;
+            cursor: pointer;
+            font-size: 1.1em;
+            color: #666;
+        }
+
+        .file-preview {
+            margin-top: 15px;
+            max-width: 200px;
+            max-height: 150px;
+            border-radius: 8px;
+            display: none;
+        }
+
+        .parameters {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+
+        .param-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .param-group label {
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: #333;
+        }
+
+        .param-group select,
+        .param-group input {
+            padding: 8px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            transition: border-color 0.3s ease;
+        }
+
+        .param-group select:focus,
+        .param-group input:focus {
+            outline: none;
+            border-color: #4facfe;
+        }
+
+        .submit-btn {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.2em;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+        }
+
+        .submit-btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .submit-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .reset-btn {
+            background: linear-gradient(135deg, #ff7675 0%, #fd79a8 100%);
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1em;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+            margin-right: 10px;
+        }
+
+        .reset-btn:hover {
+            transform: translateY(-1px);
+        }
+
+        .button-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .settings-tab {
+            background: #f8f9fa;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .tab-header {
+            background: #e9ecef;
+            padding: 15px 20px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            transition: background 0.3s ease;
+        }
+
+        .tab-header:hover {
+            background: #dee2e6;
+        }
+
+        .tab-header h3 {
+            margin: 0;
+            color: #495057;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .tab-arrow {
+            transition: transform 0.3s ease;
+            font-size: 1.2em;
+        }
+
+        .tab-arrow.open {
+            transform: rotate(90deg);
+        }
+
+        .tab-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+        }
+
+        .tab-content.open {
+            max-height: 400px;
+        }
+
+        .tab-content .parameters {
+            margin: 0;
+            border-radius: 0;
+        }
+
+        .export-section {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 20px;
+            text-align: center;
+        }
+
+        .export-section h3 {
+            margin-bottom: 15px;
+            color: #495057;
+        }
+
+        .export-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .export-btn {
+            background: linear-gradient(135deg, #00b894 0%, #00a085 100%);
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.9em;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .export-btn:hover {
+            transform: translateY(-1px);
+        }
+
+        .export-btn.json {
+            background: linear-gradient(135deg, #74b9ff 0%, #0984e3 100%);
+        }
+
+        .export-btn.csv {
+            background: linear-gradient(135deg, #fd79a8 0%, #e84393 100%);
+        }
+
+        .export-btn.zip {
+            background: linear-gradient(135deg, #a29bfe 0%, #6c5ce7 100%);
+        }
+
+        .results-section {
+            padding: 40px;
+            border-top: 2px solid #f0f0f0;
+            display: none;
+        }
+
+        .results-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        .result-item {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .result-item h3 {
+            margin-bottom: 15px;
+            color: #333;
+        }
+
+        .result-item img {
+            max-width: 100%;
+            max-height: 200px;
+            border-radius: 8px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .stats {
+            background: #e3f2fd;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .stats h3 {
+            margin-bottom: 15px;
+            color: #1976d2;
+        }
+
+        .stat-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            padding: 5px 0;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #4facfe;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 2s linear infinite;
+            margin: 20px auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error {
+            background: #ffebee;
+            color: #c62828;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔍 画像差分検出システム</h1>
+            <p>2つの画像を比較して差分を検出・可視化します</p>
+        </div>
+
+        <div class="upload-section">
+            <form id="uploadForm" class="upload-form">
+                <div class="file-input-group">
+                    <div class="file-input">
+                        <input type="file" id="image1" name="image1" accept="image/*">
+                        <label for="image1">
+                            📁 基準画像を選択<br>
+                            <small>クリックまたはドラッグ&ドロップ</small>
+                        </label>
+                        <img class="file-preview" id="preview1" alt="プレビュー1">
+                    </div>
+                    <div class="file-input">
+                        <input type="file" id="image2" name="image2" accept="image/*">
+                        <label for="image2">
+                            📁 比較画像を選択<br>
+                            <small>クリックまたはドラッグ&ドロップ</small>
+                        </label>
+                        <img class="file-preview" id="preview2" alt="プレビュー2">
+                    </div>
+                </div>
+
+                <div class="settings-tab">
+                    <div class="tab-header" id="settingsTabHeader">
+                        <h3>
+                            ⚙️ 詳細設定
+                            <small style="font-weight: normal; font-size: 0.9em; color: #6c757d;">
+                                (クリックして開く)
+                            </small>
+                        </h3>
+                        <span class="tab-arrow" id="settingsArrow">▶</span>
+                    </div>
+                    <div class="tab-content" id="settingsTabContent">
+                        <div class="parameters">
+                            <div class="param-group">
+                                <label for="method">特徴量抽出手法</label>
+                                <select id="method" name="method">
+                                    <option value="ORB">ORB (高速)</option>
+                                    <option value="SIFT">SIFT (高精度)</option>
+                                    <option value="AKAZE">AKAZE (バランス)</option>
+                                </select>
+                            </div>
+                            <div class="param-group">
+                                <label for="threshold">マッチング閾値</label>
+                                <input type="number" id="threshold" name="threshold" value="0.75" min="0" max="1" step="0.05">
+                            </div>
+                            <div class="param-group">
+                                <label for="diff_threshold">差分感度 (0-255)</label>
+                                <input type="number" id="diff_threshold" name="diff_threshold" value="30" min="0" max="255">
+                            </div>
+                            <div class="param-group">
+                                <label for="min_area">最小面積</label>
+                                <input type="number" id="min_area" name="min_area" value="100" min="1">
+                            </div>
+                            <div class="param-group">
+                                <label for="morph_kernel">カーネルサイズ</label>
+                                <input type="number" id="morph_kernel" name="morph_kernel" value="5" min="3" max="15" step="2">
+                            </div>
+                            <div style="padding: 15px 0; text-align: center;">
+                                <button type="button" class="reset-btn" id="resetBtn">
+                                    🔄 デフォルト値に戻す
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="error" id="errorMessage"></div>
+                
+                <button type="submit" class="submit-btn" id="submitBtn">
+                    🚀 差分検出を実行
+                </button>
+            </form>
+
+            <div class="loading" id="loadingDiv">
+                <div class="spinner"></div>
+                <p>画像を処理中...</p>
+            </div>
+        </div>
+
+        <div class="results-section" id="resultsSection">
+            <div class="stats" id="statsDiv"></div>
+            <div class="export-section" id="exportSection">
+                <h3>📥 結果をエクスポート</h3>
+                <div class="export-buttons">
+                    <button class="export-btn json" id="exportJsonBtn">
+                        📄 JSON形式でダウンロード
+                    </button>
+                    <button class="export-btn csv" id="exportCsvBtn">
+                        📊 CSV形式でダウンロード
+                    </button>
+                    <button class="export-btn zip" id="exportZipBtn">
+                        📦 全画像をZIPでダウンロード
+                    </button>
+                </div>
+            </div>
+            <div class="results-grid" id="resultsGrid"></div>
+        </div>
+    </div>
+
+    <script>
+        // ファイルプレビュー機能
+        function setupFilePreview(inputId, previewId) {
+            const input = document.getElementById(inputId);
+            const preview = document.getElementById(previewId);
+            
+            input.addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        preview.src = e.target.result;
+                        preview.style.display = 'block';
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+        }
+
+        setupFilePreview('image1', 'preview1');
+        setupFilePreview('image2', 'preview2');
+
+        // 詳細設定タブの開閉機能
+        const settingsTabHeader = document.getElementById('settingsTabHeader');
+        const settingsTabContent = document.getElementById('settingsTabContent');
+        const settingsArrow = document.getElementById('settingsArrow');
+
+        settingsTabHeader.addEventListener('click', function() {
+            const isOpen = settingsTabContent.classList.contains('open');
+            
+            if (isOpen) {
+                // 閉じる
+                settingsTabContent.classList.remove('open');
+                settingsArrow.classList.remove('open');
+                settingsArrow.textContent = '▶';
+            } else {
+                // 開く
+                settingsTabContent.classList.add('open');
+                settingsArrow.classList.add('open');
+                settingsArrow.textContent = '▼';
+            }
+        });
+
+        // パラメータリセット機能
+        document.getElementById('resetBtn').addEventListener('click', function() {
+            // デフォルト値に戻す
+            document.getElementById('method').value = 'ORB';
+            document.getElementById('threshold').value = '0.75';
+            document.getElementById('diff_threshold').value = '30';
+            document.getElementById('min_area').value = '100';
+            document.getElementById('morph_kernel').value = '5';
+            
+            // 視覚的フィードバック
+            this.style.transform = 'scale(0.95)';
+            setTimeout(() => {
+                this.style.transform = 'scale(1)';
+            }, 100);
+        });
+
+        // フォーム送信処理
+        document.getElementById('uploadForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            const submitBtn = document.getElementById('submitBtn');
+            const loadingDiv = document.getElementById('loadingDiv');
+            const errorDiv = document.getElementById('errorMessage');
+            const resultsSection = document.getElementById('resultsSection');
+            
+            // UI状態更新
+            submitBtn.disabled = true;
+            loadingDiv.style.display = 'block';
+            errorDiv.style.display = 'none';
+            resultsSection.style.display = 'none';
+            
+            try {
+                const response = await fetch('/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    displayResults(result);
+                } else {
+                    throw new Error(result.error || '処理エラーが発生しました');
+                }
+                
+            } catch (error) {
+                errorDiv.textContent = error.message;
+                errorDiv.style.display = 'block';
+            } finally {
+                submitBtn.disabled = false;
+                loadingDiv.style.display = 'none';
+            }
+        });
+
+        let currentResults = null; // グローバルに結果を保存
+
+        function displayResults(data) {
+            currentResults = data; // 結果を保存
+            const resultsSection = document.getElementById('resultsSection');
+            const statsDiv = document.getElementById('statsDiv');
+            const resultsGrid = document.getElementById('resultsGrid');
+            
+            // 統計情報表示
+            statsDiv.innerHTML = `
+                <h3>📊 検出結果</h3>
+                <div class="stat-item">
+                    <span>基準画像の特徴点数:</span>
+                    <span>${data.result.num_features_1}</span>
+                </div>
+                <div class="stat-item">
+                    <span>比較画像の特徴点数:</span>
+                    <span>${data.result.num_features_2}</span>
+                </div>
+                <div class="stat-item">
+                    <span>マッチした特徴点数:</span>
+                    <span>${data.result.num_matches}</span>
+                </div>
+                <div class="stat-item">
+                    <span>類似度スコア:</span>
+                    <span>${(data.result.similarity_score * 100).toFixed(2)}%</span>
+                </div>
+                <div class="stat-item">
+                    <span>有効マッチ数:</span>
+                    <span>${data.result.inlier_matches || 0}</span>
+                </div>
+                <div class="stat-item">
+                    <span>検出された差分領域数:</span>
+                    <span>${data.result.num_differences}</span>
+                </div>
+            `;
+            
+            // 画像結果表示
+            resultsGrid.innerHTML = `
+                <div class="result-item">
+                    <h3>🖼️ 基準画像</h3>
+                    <img src="${data.images.original1}" alt="基準画像">
+                </div>
+                <div class="result-item">
+                    <h3>🖼️ 比較画像</h3>
+                    <img src="${data.images.original2}" alt="比較画像">
+                </div>
+                <div class="result-item">
+                    <h3>⚪ 差分画像</h3>
+                    <img src="${data.images.difference}" alt="差分画像">
+                </div>
+                <div class="result-item">
+                    <h3>🔄 位置調整後</h3>
+                    <img src="${data.images.aligned}" alt="位置調整後画像">
+                </div>
+                <div class="result-item">
+                    <h3>🔴 差分ハイライト</h3>
+                    <img src="${data.images.highlighted}" alt="差分ハイライト画像">
+                </div>
+            `;
+            
+            // エクスポートボタンのイベントリスナーを設定
+            setupExportButtons();
+            
+            resultsSection.style.display = 'block';
+        }
+
+        function setupExportButtons() {
+            // JSON エクスポート
+            document.getElementById('exportJsonBtn').addEventListener('click', function() {
+                if (!currentResults) return;
+                
+                const jsonData = {
+                    timestamp: new Date().toISOString(),
+                    session_id: currentResults.session_id,
+                    parameters: {
+                        method: document.getElementById('method').value,
+                        threshold: document.getElementById('threshold').value,
+                        diff_threshold: document.getElementById('diff_threshold').value,
+                        min_area: document.getElementById('min_area').value,
+                        morph_kernel: document.getElementById('morph_kernel').value
+                    },
+                    results: currentResults.result
+                };
+                
+                const blob = new Blob([JSON.stringify(jsonData, null, 2)], {type: 'application/json'});
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `image_diff_results_${currentResults.session_id.substring(0, 8)}.json`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            });
+
+            // CSV エクスポート
+            document.getElementById('exportCsvBtn').addEventListener('click', function() {
+                if (!currentResults) return;
+                
+                const csvContent = `項目,値
+基準画像の特徴点数,${currentResults.result.num_features_1}
+比較画像の特徴点数,${currentResults.result.num_features_2}
+マッチした特徴点数,${currentResults.result.num_matches}
+類似度スコア,${(currentResults.result.similarity_score * 100).toFixed(2)}%
+有効マッチ数,${currentResults.result.inlier_matches || 0}
+検出された差分領域数,${currentResults.result.num_differences}
+処理日時,${new Date().toLocaleString('ja-JP')}
+セッションID,${currentResults.session_id}
+特徴量抽出手法,${document.getElementById('method').value}
+マッチング閾値,${document.getElementById('threshold').value}
+差分感度,${document.getElementById('diff_threshold').value}
+最小面積,${document.getElementById('min_area').value}
+カーネルサイズ,${document.getElementById('morph_kernel').value}`;
+                
+                const blob = new Blob([csvContent], {type: 'text/csv;charset=utf-8;'});
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `image_diff_results_${currentResults.session_id.substring(0, 8)}.csv`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            });
+
+            // ZIP エクスポート (サーバー側で実装が必要)
+            document.getElementById('exportZipBtn').addEventListener('click', async function() {
+                if (!currentResults) return;
+                
+                try {
+                    const response = await fetch(`/export_zip/${currentResults.session_id}`, {
+                        method: 'GET'
+                    });
+                    
+                    if (response.ok) {
+                        const blob = await response.blob();
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = `image_diff_${currentResults.session_id.substring(0, 8)}.zip`;
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                        URL.revokeObjectURL(url);
+                    } else {
+                        alert('ZIPファイルの生成に失敗しました');
+                    }
+                } catch (error) {
+                    alert('エラー: ' + error.message);
+                }
+            });
+        }
+    </script>
+</body>
+</html>
