@@ -177,8 +177,11 @@
             background: #f8f9fa;
             border-radius: 10px;
             margin-bottom: 20px;
-            overflow: hidden;
             transition: all 0.3s ease;
+        }
+
+        .settings-tab.tab-open {
+            overflow: visible;
         }
 
         .tab-header {
@@ -219,7 +222,8 @@
         }
 
         .tab-content.open {
-            max-height: 400px;
+            max-height: 800px;
+            overflow: visible;
         }
 
         .tab-content .parameters {
@@ -274,6 +278,93 @@
 
         .export-btn.zip {
             background: linear-gradient(135deg, #a29bfe 0%, #6c5ce7 100%);
+        }
+
+        .param-group {
+            position: relative;
+        }
+
+        .help-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 20px;
+            height: 20px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            font-size: 13px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-left: 8px;
+            transition: all 0.3s ease;
+            vertical-align: middle;
+            user-select: none;
+        }
+
+        .help-icon:hover {
+            background: #0056b3;
+            border-color: #0056b3;
+            transform: scale(1.1);
+        }
+
+        .help-popup {
+            position: absolute;
+            top: -10px;
+            right: -5px;
+            background: #2c3e50;
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            font-size: 0.85em;
+            line-height: 1.5;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+            z-index: 9999;
+            min-width: 280px;
+            max-width: 350px;
+            display: none;
+            opacity: 0;
+            transform: translateY(-5px);
+            transition: all 0.3s ease;
+            word-wrap: break-word;
+        }
+
+        .help-popup.show {
+            display: block;
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .help-popup:before {
+            content: '';
+            position: absolute;
+            top: 15px;
+            left: -8px;
+            width: 0;
+            height: 0;
+            border-top: 8px solid transparent;
+            border-bottom: 8px solid transparent;
+            border-right: 8px solid #2c3e50;
+        }
+
+        .help-popup-close {
+            position: absolute;
+            top: 5px;
+            right: 8px;
+            background: none;
+            border: none;
+            color: #bdc3c7;
+            font-size: 16px;
+            cursor: pointer;
+            padding: 0;
+            width: 20px;
+            height: 20px;
+            text-align: center;
+        }
+
+        .help-popup-close:hover {
+            color: white;
         }
 
         .results-section {
@@ -402,28 +493,81 @@
                     <div class="tab-content" id="settingsTabContent">
                         <div class="parameters">
                             <div class="param-group">
-                                <label for="method">特徴量抽出手法</label>
+                                <label for="method">
+                                    特徴量抽出手法
+                                    <button type="button" class="help-icon" data-help="method">?</button>
+                                </label>
                                 <select id="method" name="method">
                                     <option value="ORB">ORB (高速)</option>
                                     <option value="SIFT">SIFT (高精度)</option>
                                     <option value="AKAZE">AKAZE (バランス)</option>
                                 </select>
+                                <div class="help-popup" id="help-method">
+                                    <button type="button" class="help-popup-close">&times;</button>
+                                    <strong>特徴量抽出手法</strong><br><br>
+                                    <strong>ORB:</strong> 高速だが精度は中程度。リアルタイム処理に適している<br><br>
+                                    <strong>SIFT:</strong> 最も高精度だが処理時間が長い。品質重視の場合に推奨<br><br>
+                                    <strong>AKAZE:</strong> 速度と精度のバランスが良い。一般的な用途に最適
+                                </div>
                             </div>
                             <div class="param-group">
-                                <label for="threshold">マッチング閾値</label>
+                                <label for="threshold">
+                                    マッチング閾値
+                                    <button type="button" class="help-icon" data-help="threshold">?</button>
+                                </label>
                                 <input type="number" id="threshold" name="threshold" value="0.75" min="0" max="1" step="0.05">
+                                <div class="help-popup" id="help-threshold">
+                                    <button type="button" class="help-popup-close">&times;</button>
+                                    <strong>マッチング閾値</strong><br><br>
+                                    特徴点マッチングの厳密さを調整します<br><br>
+                                    <strong>低い値 (0.5-0.7):</strong> より厳密なマッチング、誤マッチは少ないが特徴点も少なくなる<br><br>
+                                    <strong>高い値 (0.8-0.9):</strong> より多くの特徴点をマッチングするが、誤マッチのリスクが増加
+                                </div>
                             </div>
                             <div class="param-group">
-                                <label for="diff_threshold">差分感度 (0-255)</label>
+                                <label for="diff_threshold">
+                                    差分感度 (0-255)
+                                    <button type="button" class="help-icon" data-help="diff_threshold">?</button>
+                                </label>
                                 <input type="number" id="diff_threshold" name="diff_threshold" value="30" min="0" max="255">
+                                <div class="help-popup" id="help-diff_threshold">
+                                    <button type="button" class="help-popup-close">&times;</button>
+                                    <strong>差分感度</strong><br><br>
+                                    画素値の差がこの値以上の場合に差分として検出します<br><br>
+                                    <strong>低い値 (10-20):</strong> 小さな変化も検出（高感度）<br><br>
+                                    <strong>高い値 (40-60):</strong> 大きな変化のみ検出（低感度）<br><br>
+                                    ノイズが多い画像では高めの値を推奨
+                                </div>
                             </div>
                             <div class="param-group">
-                                <label for="min_area">最小面積</label>
+                                <label for="min_area">
+                                    最小面積
+                                    <button type="button" class="help-icon" data-help="min_area">?</button>
+                                </label>
                                 <input type="number" id="min_area" name="min_area" value="100" min="1">
+                                <div class="help-popup" id="help-min_area">
+                                    <button type="button" class="help-popup-close">&times;</button>
+                                    <strong>最小面積</strong><br><br>
+                                    この値より小さい差分領域は無視されます（ノイズ除去）<br><br>
+                                    <strong>小さい値 (20-50):</strong> 細かい差分も検出<br><br>
+                                    <strong>大きい値 (200-500):</strong> 大きな変化のみ検出<br><br>
+                                    単位はピクセル数です
+                                </div>
                             </div>
                             <div class="param-group">
-                                <label for="morph_kernel">カーネルサイズ</label>
+                                <label for="morph_kernel">
+                                    カーネルサイズ
+                                    <button type="button" class="help-icon" data-help="morph_kernel">?</button>
+                                </label>
                                 <input type="number" id="morph_kernel" name="morph_kernel" value="5" min="3" max="15" step="2">
+                                <div class="help-popup" id="help-morph_kernel">
+                                    <button type="button" class="help-popup-close">&times;</button>
+                                    <strong>カーネルサイズ</strong><br><br>
+                                    画像処理のカーネル（フィルタ）サイズです<br><br>
+                                    <strong>小さい値 (3-5):</strong> 細かい処理、エッジを保持<br><br>
+                                    <strong>大きい値 (7-11):</strong> より滑らかな処理、ノイズ除去効果が高い<br><br>
+                                    通常は3〜7の奇数値を使用
+                                </div>
                             </div>
                             <div style="padding: 15px 0; text-align: center;">
                                 <button type="button" class="reset-btn" id="resetBtn">
@@ -493,6 +637,7 @@
         const settingsTabHeader = document.getElementById('settingsTabHeader');
         const settingsTabContent = document.getElementById('settingsTabContent');
         const settingsArrow = document.getElementById('settingsArrow');
+        const settingsTab = document.querySelector('.settings-tab');
 
         settingsTabHeader.addEventListener('click', function() {
             const isOpen = settingsTabContent.classList.contains('open');
@@ -502,13 +647,140 @@
                 settingsTabContent.classList.remove('open');
                 settingsArrow.classList.remove('open');
                 settingsArrow.textContent = '▶';
+                settingsTab.classList.remove('tab-open');
             } else {
                 // 開く
                 settingsTabContent.classList.add('open');
                 settingsArrow.classList.add('open');
                 settingsArrow.textContent = '▼';
+                settingsTab.classList.add('tab-open');
+                
+                // タブが開かれた時にヘルプ機能を再初期化
+                setTimeout(function() {
+                    setupHelpPopups();
+                }, 300); // アニメーション完了後に実行
             }
         });
+
+        // ヘルプポップアップ機能
+        function setupHelpPopups() {
+            console.log('ヘルプポップアップ機能を初期化中...');
+            
+            const helpIcons = document.querySelectorAll('.help-icon');
+            console.log('見つかったヘルプアイコンの数:', helpIcons.length);
+            
+            // 既存のイベントリスナーを削除
+            helpIcons.forEach(function(icon) {
+                const newIcon = icon.cloneNode(true);
+                icon.parentNode.replaceChild(newIcon, icon);
+            });
+            
+            // 新しいヘルプアイコンを再取得
+            const newHelpIcons = document.querySelectorAll('.help-icon');
+            
+            // ヘルプアイコンのクリックイベント
+            newHelpIcons.forEach(function(icon, index) {
+                console.log('ヘルプアイコン', index, 'にイベントリスナーを追加中');
+                icon.onclick = function(e) {
+                    console.log('ヘルプアイコンがクリックされました:', this.getAttribute('data-help'));
+                    e.preventDefault();
+                    e.stopPropagation();
+                    e.stopImmediatePropagation();
+                    
+                    const helpType = this.getAttribute('data-help');
+                    const popup = document.getElementById('help-' + helpType);
+                    
+                    if (!popup) {
+                        console.error('ポップアップが見つかりません:', 'help-' + helpType);
+                        return false;
+                    }
+                    
+                    // 他の開いているポップアップを閉じる
+                    document.querySelectorAll('.help-popup').forEach(function(p) {
+                        p.classList.remove('show');
+                    });
+                    
+                    // クリックされたポップアップを表示
+                    popup.classList.add('show');
+                    console.log('ポップアップを表示しました:', helpType);
+                    
+                    return false;
+                };
+            });
+
+            // 閉じるボタンのクリックイベント
+            document.querySelectorAll('.help-popup-close').forEach(function(closeBtn) {
+                closeBtn.onclick = function(e) {
+                    console.log('バツボタンがクリックされました');
+                    e.preventDefault();
+                    e.stopPropagation();
+                    e.stopImmediatePropagation();
+                    this.parentElement.classList.remove('show');
+                    return false;
+                };
+            });
+
+            // ドキュメント全体のクリックでポップアップを閉じる
+            document.addEventListener('click', function(e) {
+                if (!e.target.closest('.help-popup') && !e.target.closest('.help-icon')) {
+                    document.querySelectorAll('.help-popup').forEach(function(popup) {
+                        popup.classList.remove('show');
+                    });
+                }
+            });
+        }
+
+        // イベント委譲を使用したヘルプボタン処理
+        document.addEventListener('click', function(e) {
+            if (e.target.classList.contains('help-icon')) {
+                console.log('ヘルプアイコンがクリックされました（委譲）:', e.target.getAttribute('data-help'));
+                e.preventDefault();
+                e.stopPropagation();
+                e.stopImmediatePropagation();
+                
+                const helpType = e.target.getAttribute('data-help');
+                const popup = document.getElementById('help-' + helpType);
+                
+                if (!popup) {
+                    console.error('ポップアップが見つかりません:', 'help-' + helpType);
+                    return false;
+                }
+                
+                // 他の開いているポップアップを閉じる
+                document.querySelectorAll('.help-popup').forEach(function(p) {
+                    p.classList.remove('show');
+                });
+                
+                // クリックされたポップアップを表示
+                popup.classList.add('show');
+                console.log('ポップアップを表示しました:', helpType);
+                
+                return false;
+            }
+            
+            // バツボタンのクリック処理
+            if (e.target.classList.contains('help-popup-close')) {
+                console.log('バツボタンがクリックされました（委譲）');
+                e.preventDefault();
+                e.stopPropagation();
+                e.stopImmediatePropagation();
+                
+                const popup = e.target.closest('.help-popup');
+                if (popup) {
+                    popup.classList.remove('show');
+                }
+                
+                return false;
+            }
+        });
+
+        // DOMが完全に読み込まれた後にヘルプポップアップ機能を初期化
+        document.addEventListener('DOMContentLoaded', function() {
+            setupHelpPopups();
+        });
+        
+        // 即座にも実行（フォールバック）
+        setupHelpPopups();
 
         // パラメータリセット機能
         document.getElementById('resetBtn').addEventListener('click', function() {
@@ -529,6 +801,13 @@
         // フォーム送信処理
         document.getElementById('uploadForm').addEventListener('submit', async function(e) {
             e.preventDefault();
+            
+            // ヘルプボタンやバツボタンからのフォーム送信を防ぐ
+            if (e.submitter && e.submitter.classList && 
+                (e.submitter.classList.contains('help-icon') || e.submitter.classList.contains('help-popup-close'))) {
+                console.log('ヘルプ関連ボタンからの送信をブロックしました');
+                return false;
+            }
             
             const formData = new FormData(this);
             const submitBtn = document.getElementById('submitBtn');
