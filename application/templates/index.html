@@ -468,7 +468,7 @@
                             📁 基準画像を選択<br>
                             <small>クリックまたはドラッグ&ドロップ</small>
                         </label>
-                        <img class="file-preview" id="preview1" alt="プレビュー1">
+                        <img class="file-preview" id="preview1" alt="プレビュー1" src="/static/image3.png" style="display: block;">
                     </div>
                     <div class="file-input">
                         <input type="file" id="image2" name="image2" accept="image/*">
@@ -476,7 +476,7 @@
                             📁 比較画像を選択<br>
                             <small>クリックまたはドラッグ&ドロップ</small>
                         </label>
-                        <img class="file-preview" id="preview2" alt="プレビュー2">
+                        <img class="file-preview" id="preview2" alt="プレビュー2" src="/static/image4.png" style="display: block;">
                     </div>
                 </div>
 
@@ -499,7 +499,7 @@
                                 </label>
                                 <select id="method" name="method">
                                     <option value="ORB">ORB (高速)</option>
-                                    <option value="SIFT">SIFT (高精度)</option>
+                                    <option value="SIFT" selected>SIFT (高精度)</option>
                                     <option value="AKAZE">AKAZE (バランス)</option>
                                 </select>
                                 <div class="help-popup" id="help-method">
@@ -581,7 +581,7 @@
                 <div class="error" id="errorMessage"></div>
                 
                 <button type="submit" class="submit-btn" id="submitBtn">
-                    差分検出を実行
+                    実行
                 </button>
             </form>
 
@@ -785,7 +785,7 @@
         // パラメータリセット機能
         document.getElementById('resetBtn').addEventListener('click', function() {
             // デフォルト値に戻す
-            document.getElementById('method').value = 'ORB';
+            document.getElementById('method').value = 'SIFT';
             document.getElementById('threshold').value = '0.75';
             document.getElementById('diff_threshold').value = '30';
             document.getElementById('min_area').value = '100';
@@ -1005,6 +1005,39 @@
                 }
             });
         }
+
+        // ページ読み込み時にデフォルト画像をフォームに設定
+        window.addEventListener('load', async function() {
+            try {
+                // デフォルト画像をFileオブジェクトとして取得
+                const [response1, response2] = await Promise.all([
+                    fetch('/static/image3.png'),
+                    fetch('/static/image4.png')
+                ]);
+                
+                const [blob1, blob2] = await Promise.all([
+                    response1.blob(),
+                    response2.blob()
+                ]);
+                
+                // FileオブジェクトとしてDataTransferに追加
+                const dt1 = new DataTransfer();
+                const dt2 = new DataTransfer();
+                
+                const file1 = new File([blob1], 'image3.png', { type: blob1.type });
+                const file2 = new File([blob2], 'image4.png', { type: blob2.type });
+                
+                dt1.items.add(file1);
+                dt2.items.add(file2);
+                
+                document.getElementById('image1').files = dt1.files;
+                document.getElementById('image2').files = dt2.files;
+                
+                console.log('デフォルト画像がセットされました');
+            } catch (error) {
+                console.log('デフォルト画像の読み込みに失敗:', error);
+            }
+        });
     </script>
 </body>
 </html>

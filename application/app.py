@@ -203,8 +203,6 @@ def save_results_web(result, output_dir):
         for i, box in enumerate(result['bounding_boxes']):
             x, y, w, h = box
             cv2.rectangle(img_with_boxes, (x, y), (x + w, y + h), (0, 0, 255), 2)
-            cv2.putText(img_with_boxes, f'Object {i+1}', (x, y-10), 
-                       cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
         
         detection_path = output_path / 'object_detection.png'
         cv2.imwrite(str(detection_path), img_with_boxes)
@@ -216,6 +214,10 @@ def uploaded_file(filename):
 @app.route('/results/<path:filename>')
 def result_file(filename):
     return send_from_directory(RESULTS_FOLDER, filename)
+
+@app.route('/static/<path:filename>')
+def static_file(filename):
+    return send_from_directory('static', filename)
 
 @app.route('/export_zip/<session_id>')
 def export_zip(session_id):
