@@ -112,7 +112,6 @@
         }
 
         .header {
-            /* background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); */
             background: #4facfe;
             color: white;
             padding: 30px;
@@ -234,7 +233,6 @@
         }
 
         .reset-btn {
-            /* background: linear-gradient(135deg, #ff7675 0%, #fd79a8 100%); */
             background: #ff7675;
             color: white;
             padding: 10px 20px;
@@ -419,17 +417,6 @@
             transform: translateY(0);
         }
 
-        .help-popup:before {
-            content: '';
-            position: absolute;
-            top: 15px;
-            left: -8px;
-            width: 0;
-            height: 0;
-            border-top: 8px solid transparent;
-            border-bottom: 8px solid transparent;
-            border-right: 8px solid #2c3e50;
-        }
 
         .help-popup-close {
             position: absolute;
@@ -539,8 +526,8 @@
         </div>
 
         <div class="nav-buttons">
-            <button id="newAnalysisBtn" class="nav-btn active">🔍 新規解析</button>
-            <button id="historyBtn" class="nav-btn">📚 履歴表示</button>
+            <button id="newAnalysisBtn" class="nav-btn active">新規</button>
+            <button id="historyBtn" class="nav-btn">履歴</button>
         </div>
 
         <div class="upload-section" id="uploadSection">
@@ -549,16 +536,16 @@
                     <div class="file-input">
                         <input type="file" id="image1" name="image1" accept="image/*">
                         <label for="image1">
-                            📁 基準画像を選択<br>
-                            <small>クリックまたはドラッグ&ドロップ</small>
+                            基準画像を選択<br>
+                            <small>クリック！</small>
                         </label>
                         <img class="file-preview" id="preview1" alt="プレビュー1" src="/static/image3.png" style="display: block;">
                     </div>
                     <div class="file-input">
                         <input type="file" id="image2" name="image2" accept="image/*">
                         <label for="image2">
-                            📁 比較画像を選択<br>
-                            <small>クリックまたはドラッグ&ドロップ</small>
+                            比較画像を選択<br>
+                            <small>クリック！</small>
                         </label>
                         <img class="file-preview" id="preview2" alt="プレビュー2" src="/static/image4.png" style="display: block;">
                     </div>
@@ -655,7 +642,7 @@
                             </div>
                             <div style="padding: 15px 0; text-align: center;">
                                 <button type="button" class="reset-btn" id="resetBtn">
-                                    🔄 デフォルト値に戻す
+                                    デフォルト値に戻す
                                 </button>
                             </div>
                         </div>
@@ -676,7 +663,7 @@
         </div>
 
         <div class="history-section" id="historySection" style="display: none;">
-            <h2>📚 処理履歴（最新5件）</h2>
+            <h2>処理履歴（最新5件）</h2>
             <div class="loading" id="historyLoadingDiv" style="display: none;">
                 <div class="spinner"></div>
                 <p>履歴を読み込み中...</p>
@@ -689,10 +676,10 @@
 
         <div class="results-section" id="resultsSection" style="display: none;">
             <div class="export-section" id="exportSection">
-                <h3>📥 結果をエクスポート</h3>
+                <h3>結果をダウンロード</h3>
                 <div class="export-buttons">
                     <button class="export-btn zip" id="exportZipBtn">
-                        📦 全画像をZIPでダウンロード
+                        全画像をZIPでダウンロード
                     </button>
                 </div>
             </div>
@@ -951,27 +938,27 @@
             // 画像結果表示
             resultsGrid.innerHTML = `
                 <div class="result-item">
-                    <h3>🖼️ 基準画像</h3>
+                    <h3>基準画像</h3>
                     <img src="${data.images.original1}" alt="基準画像">
                 </div>
                 <div class="result-item">
-                    <h3>🖼️ 比較画像</h3>
+                    <h3>比較画像</h3>
                     <img src="${data.images.original2}" alt="比較画像">
                 </div>
                 <div class="result-item">
-                    <h3>⚪ 差分画像</h3>
+                    <h3>差分画像</h3>
                     <img src="${data.images.difference}" alt="差分画像">
                 </div>
                 <div class="result-item">
-                    <h3>🔄 位置調整後</h3>
+                    <h3>位置調整後</h3>
                     <img src="${data.images.aligned}" alt="位置調整後画像">
                 </div>
                 <div class="result-item">
-                    <h3>🔴 差分ハイライト</h3>
+                    <h3>差分ハイライト</h3>
                     <img src="${data.images.highlighted}" alt="差分ハイライト画像">
                 </div>
                 <div class="result-item">
-                    <h3>🎯 物体検知</h3>
+                    <h3>物体検知</h3>
                     <img src="${data.images.detection}" alt="物体検知画像">
                 </div>
             `;
