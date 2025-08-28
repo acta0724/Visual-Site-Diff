@@ -1,14 +1,17 @@
-# YOLOv11モデルの利用に必要
-ultralytics
-
-# 画像処理（クロップ、AKAZE特徴量抽出）に必要
+# 画像処理（特徴点検出、変換処理、描画）に必要
 opencv-python
 
-# 数値計算、特にOpenCVでのデータ操作に必要
+# 数値計算、配列操作に必要
 numpy
 
-# 近似最近傍探索（ANN）インデックス構築に必要
-annoy
+# Webアプリケーションフレームワーク
+flask
 
-# Ultralyticsの実行基盤となるディープラーニングフレームワーク
-torch
+# 画像ファイル処理に必要
+pillow
+
+# 追加の画像処理機能（scikit-image）
+scikit-image
+
+# セキュアなファイル名処理
+werkzeug
