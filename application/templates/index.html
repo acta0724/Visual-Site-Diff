@@ -13,7 +13,6 @@
 
         body {
             font-family: 'Arial', sans-serif;
-            /* background: linear-gradient(135deg, #74b9ff 0%, #0984e3 100%); */
             background: #FFFFFF;
             min-height: 100vh;
             padding: 20px;
@@ -26,6 +25,90 @@
             border-radius: 15px;
             box-shadow: 0 20px 40px rgba(0,0,0,0.1);
             overflow: hidden;
+        }
+
+        .nav-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            padding: 20px;
+            background: #f8f9fa;
+        }
+
+        .nav-btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            background: #6c757d;
+            color: white;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .nav-btn.active {
+            background: #4facfe;
+        }
+
+        .nav-btn:hover {
+            background: #5a6268;
+        }
+
+        .nav-btn.active:hover {
+            background: #3a8bfe;
+        }
+
+        .history-section {
+            padding: 40px;
+        }
+
+        .history-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .history-item {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 15px;
+            background: white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .history-item:hover {
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+            transform: translateY(-2px);
+        }
+
+        .history-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 8px;
+        }
+
+        .history-preview {
+            margin: 10px 0;
+            text-align: center;
+        }
+
+        .history-preview img {
+            max-width: 100%;
+            max-height: 150px;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .history-method {
+            font-size: 0.8em;
+            color: #888;
+            font-style: italic;
+            margin-top: 10px;
         }
 
         .header {
@@ -453,13 +536,14 @@
     <div class="container">
         <div class="header">
             <h1>画像差分検出システム</h1>
-            <!-- <p>2つの画像を比較して差分を検出・可視化します</p>
-            <small style="opacity: 0.8; font-size: 0.9em;">
-                💡 古い解析結果は自動的に削除されます（最新5件を保持）
-            </small> -->
         </div>
 
-        <div class="upload-section">
+        <div class="nav-buttons">
+            <button id="newAnalysisBtn" class="nav-btn active">🔍 新規解析</button>
+            <button id="historyBtn" class="nav-btn">📚 履歴表示</button>
+        </div>
+
+        <div class="upload-section" id="uploadSection">
             <form id="uploadForm" class="upload-form">
                 <div class="file-input-group">
                     <div class="file-input">
@@ -591,17 +675,22 @@
             </div>
         </div>
 
-        <div class="results-section" id="resultsSection">
-            <div class="stats" id="statsDiv"></div>
+        <div class="history-section" id="historySection" style="display: none;">
+            <h2>📚 処理履歴（最新5件）</h2>
+            <div class="loading" id="historyLoadingDiv" style="display: none;">
+                <div class="spinner"></div>
+                <p>履歴を読み込み中...</p>
+            </div>
+            <div class="error" id="historyErrorMessage" style="display: none;"></div>
+            <div class="history-grid" id="historyGrid">
+                <!-- 履歴アイテムがここに表示される -->
+            </div>
+        </div>
+
+        <div class="results-section" id="resultsSection" style="display: none;">
             <div class="export-section" id="exportSection">
                 <h3>📥 結果をエクスポート</h3>
                 <div class="export-buttons">
-                    <button class="export-btn json" id="exportJsonBtn">
-                        📄 JSON形式でダウンロード
-                    </button>
-                    <button class="export-btn csv" id="exportCsvBtn">
-                        📊 CSV形式でダウンロード
-                    </button>
                     <button class="export-btn zip" id="exportZipBtn">
                         📦 全画像をZIPでダウンロード
                     </button>
@@ -809,6 +898,14 @@
                 return false;
             }
             
+            // デバッグ: フォーム送信前にファイルの状態を確認
+            const image1Files = document.getElementById('image1').files;
+            const image2Files = document.getElementById('image2').files;
+            console.log('送信時 image1 files:', image1Files, 'length:', image1Files.length);
+            console.log('送信時 image2 files:', image2Files, 'length:', image2Files.length);
+            if (image1Files.length > 0) console.log('image1[0] name:', image1Files[0].name);
+            if (image2Files.length > 0) console.log('image2[0] name:', image2Files[0].name);
+            
             const formData = new FormData(this);
             const submitBtn = document.getElementById('submitBtn');
             const loadingDiv = document.getElementById('loadingDiv');
@@ -849,41 +946,7 @@
         function displayResults(data) {
             currentResults = data; // 結果を保存
             const resultsSection = document.getElementById('resultsSection');
-            const statsDiv = document.getElementById('statsDiv');
             const resultsGrid = document.getElementById('resultsGrid');
-            
-            // 統計情報表示
-            statsDiv.innerHTML = `
-                <h3>📊 検出結果</h3>
-                <div class="stat-item">
-                    <span>基準画像の特徴点数:</span>
-                    <span>${data.result.num_features_1}</span>
-                </div>
-                <div class="stat-item">
-                    <span>比較画像の特徴点数:</span>
-                    <span>${data.result.num_features_2}</span>
-                </div>
-                <div class="stat-item">
-                    <span>マッチした特徴点数:</span>
-                    <span>${data.result.num_matches}</span>
-                </div>
-                <div class="stat-item">
-                    <span>類似度スコア:</span>
-                    <span>${(data.result.similarity_score * 100).toFixed(2)}%</span>
-                </div>
-                <div class="stat-item">
-                    <span>有効マッチ数:</span>
-                    <span>${data.result.inlier_matches || 0}</span>
-                </div>
-                <div class="stat-item">
-                    <span>検出された差分領域数:</span>
-                    <span>${data.result.num_differences}</span>
-                </div>
-                <div class="stat-item">
-                    <span>検出された変化物体数:</span>
-                    <span>${data.result.num_objects || 0}</span>
-                </div>
-            `;
             
             // 画像結果表示
             resultsGrid.innerHTML = `
@@ -920,63 +983,6 @@
         }
 
         function setupExportButtons() {
-            // JSON エクスポート
-            document.getElementById('exportJsonBtn').addEventListener('click', function() {
-                if (!currentResults) return;
-                
-                const jsonData = {
-                    timestamp: new Date().toISOString(),
-                    session_id: currentResults.session_id,
-                    parameters: {
-                        method: document.getElementById('method').value,
-                        threshold: document.getElementById('threshold').value,
-                        diff_threshold: document.getElementById('diff_threshold').value,
-                        min_area: document.getElementById('min_area').value,
-                        morph_kernel: document.getElementById('morph_kernel').value
-                    },
-                    results: currentResults.result
-                };
-                
-                const blob = new Blob([JSON.stringify(jsonData, null, 2)], {type: 'application/json'});
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `image_diff_results_${currentResults.session_id.substring(0, 8)}.json`;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                URL.revokeObjectURL(url);
-            });
-
-            // CSV エクスポート
-            document.getElementById('exportCsvBtn').addEventListener('click', function() {
-                if (!currentResults) return;
-                
-                const csvContent = `項目,値
-基準画像の特徴点数,${currentResults.result.num_features_1}
-比較画像の特徴点数,${currentResults.result.num_features_2}
-マッチした特徴点数,${currentResults.result.num_matches}
-類似度スコア,${(currentResults.result.similarity_score * 100).toFixed(2)}%
-有効マッチ数,${currentResults.result.inlier_matches || 0}
-検出された差分領域数,${currentResults.result.num_differences}
-処理日時,${new Date().toLocaleString('ja-JP')}
-セッションID,${currentResults.session_id}
-特徴量抽出手法,${document.getElementById('method').value}
-マッチング閾値,${document.getElementById('threshold').value}
-差分感度,${document.getElementById('diff_threshold').value}
-最小面積,${document.getElementById('min_area').value}
-カーネルサイズ,${document.getElementById('morph_kernel').value}`;
-                
-                const blob = new Blob([csvContent], {type: 'text/csv;charset=utf-8;'});
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `image_diff_results_${currentResults.session_id.substring(0, 8)}.csv`;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                URL.revokeObjectURL(url);
-            });
 
             // ZIP エクスポート (サーバー側で実装が必要)
             document.getElementById('exportZipBtn').addEventListener('click', async function() {
@@ -1027,6 +1033,10 @@
                 const file1 = new File([blob1], 'image3.png', { type: blob1.type });
                 const file2 = new File([blob2], 'image4.png', { type: blob2.type });
                 
+                // デフォルトファイルをグローバル変数に保存
+                defaultFiles.image1 = file1;
+                defaultFiles.image2 = file2;
+                
                 dt1.items.add(file1);
                 dt2.items.add(file2);
                 
@@ -1034,10 +1044,163 @@
                 document.getElementById('image2').files = dt2.files;
                 
                 console.log('デフォルト画像がセットされました');
+                console.log('image1 files:', document.getElementById('image1').files);
+                console.log('image2 files:', document.getElementById('image2').files);
             } catch (error) {
                 console.log('デフォルト画像の読み込みに失敗:', error);
             }
         });
+
+        // ファイル入力のchangeイベントでデフォルト画像の復元処理
+        let defaultFiles = { image1: null, image2: null };
+
+        document.getElementById('image1').addEventListener('change', function(e) {
+            if (this.files.length === 0 && defaultFiles.image1) {
+                // キャンセルされた場合はデフォルトファイルを復元
+                const dt = new DataTransfer();
+                dt.items.add(defaultFiles.image1);
+                this.files = dt.files;
+                console.log('image1 デフォルトファイルを復元しました');
+            }
+        });
+
+        document.getElementById('image2').addEventListener('change', function(e) {
+            if (this.files.length === 0 && defaultFiles.image2) {
+                // キャンセルされた場合はデフォルトファイルを復元
+                const dt = new DataTransfer();
+                dt.items.add(defaultFiles.image2);
+                this.files = dt.files;
+                console.log('image2 デフォルトファイルを復元しました');
+            }
+        });
+
+        // ナビゲーション機能
+        document.getElementById('newAnalysisBtn').addEventListener('click', function() {
+            showNewAnalysis();
+        });
+
+        document.getElementById('historyBtn').addEventListener('click', function() {
+            showHistory();
+        });
+
+        function showNewAnalysis() {
+            document.getElementById('uploadSection').style.display = 'block';
+            document.getElementById('historySection').style.display = 'none';
+            document.getElementById('resultsSection').style.display = 'none';
+            
+            // ボタンの状態更新
+            document.getElementById('newAnalysisBtn').classList.add('active');
+            document.getElementById('historyBtn').classList.remove('active');
+        }
+
+        function showHistory() {
+            document.getElementById('uploadSection').style.display = 'none';
+            document.getElementById('historySection').style.display = 'block';
+            document.getElementById('resultsSection').style.display = 'none';
+            
+            // ボタンの状態更新
+            document.getElementById('newAnalysisBtn').classList.remove('active');
+            document.getElementById('historyBtn').classList.add('active');
+            
+            // 履歴を読み込み
+            loadHistory();
+        }
+
+        // 履歴取得と表示
+        async function loadHistory() {
+            const historyLoadingDiv = document.getElementById('historyLoadingDiv');
+            const historyErrorMessage = document.getElementById('historyErrorMessage');
+            const historyGrid = document.getElementById('historyGrid');
+            
+            historyLoadingDiv.style.display = 'block';
+            historyErrorMessage.style.display = 'none';
+            historyGrid.innerHTML = '';
+            
+            try {
+                const response = await fetch('/history');
+                const data = await response.json();
+                
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+                
+                displayHistory(data.sessions);
+            } catch (error) {
+                console.error('履歴の取得に失敗:', error);
+                historyErrorMessage.textContent = '履歴の取得に失敗しました: ' + error.message;
+                historyErrorMessage.style.display = 'block';
+            } finally {
+                historyLoadingDiv.style.display = 'none';
+            }
+        }
+
+        function displayHistory(sessions) {
+            const historyGrid = document.getElementById('historyGrid');
+            
+            if (sessions.length === 0) {
+                historyGrid.innerHTML = '<p>履歴がありません。</p>';
+                return;
+            }
+            
+            historyGrid.innerHTML = sessions.map(session => `
+                <div class="history-item" onclick="loadSession('${session.session_id}')">
+                    <div class="history-header">
+                        <strong>ID: ${session.session_id.substring(0, 8)}...</strong>
+                        <small>${new Date(session.timestamp * 1000).toLocaleString('ja-JP')}</small>
+                    </div>
+                    <div class="history-preview">
+                        <img src="/results/${session.session_id}/differences_highlighted.png" 
+                             alt="差分ハイライト" 
+                             onerror="this.style.display='none'">
+                    </div>
+                    ${session.result.feature_method ? `<div class="history-method">手法: ${session.result.feature_method}</div>` : ''}
+                </div>
+            `).join('');
+        }
+
+        // 特定のセッションを読み込み
+        async function loadSession(sessionId) {
+            try {
+                // セッションの画像ファイル名を取得（履歴データから）
+                const response = await fetch('/history');
+                const data = await response.json();
+                const session = data.sessions.find(s => s.session_id === sessionId);
+                
+                if (!session || !session.original_images || session.original_images.length < 2) {
+                    throw new Error('セッションデータが見つからないか、画像が不足しています');
+                }
+                
+                // セッションデータを構築
+                const sessionData = {
+                    session_id: sessionId,
+                    result: session.result,
+                    images: {
+                        original1: `/uploads/${sessionId}/${session.original_images[0]}`,
+                        original2: `/uploads/${sessionId}/${session.original_images[1]}`,
+                        difference: `/results/${sessionId}/difference_image.png`,
+                        aligned: `/results/${sessionId}/aligned_image.png`,
+                        highlighted: `/results/${sessionId}/differences_highlighted.png`,
+                        detection: `/results/${sessionId}/object_detection.png`
+                    }
+                };
+                
+                currentResults = sessionData; // グローバル変数に保存
+                displayResults(sessionData);
+                
+                // セクション切り替え
+                document.getElementById('uploadSection').style.display = 'none';
+                document.getElementById('historySection').style.display = 'none';
+                document.getElementById('resultsSection').style.display = 'block';
+                
+                // ナビゲーションボタンの状態をリセット
+                document.getElementById('newAnalysisBtn').classList.remove('active');
+                document.getElementById('historyBtn').classList.remove('active');
+                
+            } catch (error) {
+                console.error('セッションの読み込みに失敗:', error);
+                alert('セッションの読み込みに失敗しました: ' + error.message);
+            }
+        }
     </script>
 </body>
 </html>

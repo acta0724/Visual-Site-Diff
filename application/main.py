@@ -1,21 +1,4 @@
 #!/usr/bin/env python3
-"""
-画像差分検出システム - コマンドライン版
-使用方法:
-python image_diff_cli.py image1.jpg image2.jpg [オプション]
-
-基本的な使用例:
-python image_diff_cli.py before.jpg after.jpg
-
-差分感度の調整:
-python image_diff_cli.py img1.jpg img2.jpg --diff-threshold 20 --min-area 50
-
-高精度モード:
-python image_diff_cli.py img1.jpg img2.jpg --method SIFT --diff-threshold 15
-
-結果保存:
-python image_diff_cli.py img1.jpg img2.jpg --output results/ --verbose
-"""
 
 import argparse
 import sys
@@ -29,16 +12,6 @@ from typing import Tuple, List, Optional
 class ImageDifferenceDetector:
     def __init__(self, feature_method='SIFT', match_threshold=0.75, 
                  diff_threshold=30, min_area=100, morph_kernel_size=5):
-        """
-        画像差分検出システムの初期化
-        
-        Args:
-            feature_method: 特徴量抽出手法 ('ORB', 'SIFT', 'AKAZE')
-            match_threshold: マッチング閾値
-            diff_threshold: 差分画像の二値化閾値 (小さいほど敏感)
-            min_area: 差分として認識する最小面積 (大きいほどノイズを除去)
-            morph_kernel_size: モルフォロジー処理のカーネルサイズ
-        """
         self.feature_method = feature_method
         self.match_threshold = match_threshold
         self.diff_threshold = diff_threshold
@@ -141,15 +114,6 @@ class ImageDifferenceDetector:
         return filtered_contours
     
     def detect_object_boxes(self, contours: List) -> List:
-        """
-        変化領域の境界ボックス（物体検知風）を計算
-        
-        Args:
-            contours: 差分輪郭のリスト
-            
-        Returns:
-            境界ボックスのリスト [(x, y, w, h), ...]
-        """
         bounding_boxes = []
         
         for contour in contours:
@@ -173,15 +137,6 @@ class ImageDifferenceDetector:
         return merged_boxes
     
     def merge_overlapping_boxes(self, boxes: List) -> List:
-        """
-        重複する境界ボックスをマージ
-        
-        Args:
-            boxes: 境界ボックスのリスト [(x, y, w, h), ...]
-            
-        Returns:
-            マージされた境界ボックスのリスト
-        """
         if not boxes:
             return []
         
@@ -224,15 +179,6 @@ class ImageDifferenceDetector:
         return merged
     
     def calculate_iou(self, box1, box2):
-        """
-        IoU (Intersection over Union) を計算
-        
-        Args:
-            box1, box2: (x1, y1, x2, y2) 形式の境界ボックス
-            
-        Returns:
-            IoU値 (0.0-1.0)
-        """
         # 交差領域の計算
         x1 = max(box1[0], box2[0])
         y1 = max(box1[1], box2[1])

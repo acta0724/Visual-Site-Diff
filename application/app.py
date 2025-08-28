@@ -72,7 +72,11 @@ def upload_files():
     file1 = request.files['image1']
     file2 = request.files['image2']
     
-    if file1.filename == '' or file2.filename == '':
+    # デバッグ用ログ
+    print(f"DEBUG: file1.filename = '{file1.filename}', file2.filename = '{file2.filename}'")
+    print(f"DEBUG: file1 exists = {file1 is not None}, file2 exists = {file2 is not None}")
+    
+    if file1.filename == '' or file2.filename == '' or file1.filename is None or file2.filename is None:
         return jsonify({'error': '画像ファイルを選択してください'}), 400
     
     if not (allowed_file(file1.filename) and allowed_file(file2.filename)):
@@ -254,6 +258,48 @@ def export_zip(session_id):
             'Content-Disposition': f'attachment; filename=image_diff_{session_id[:8]}.zip'
         }
     )
+
+@app.route('/history')
+def get_history():
+    """過去のセッション履歴を取得"""
+    try:
+        sessions = []
+        
+        # results フォルダから最新5個のセッションを取得
+        result_folders = []
+        if Path(RESULTS_FOLDER).exists():
+            result_folders = sorted(Path(RESULTS_FOLDER).glob('*'), 
+                                   key=lambda x: x.stat().st_ctime, reverse=True)[:5]
+        
+        for session_folder in result_folders:
+            if not session_folder.is_dir():
+                continue
+                
+            session_id = session_folder.name
+            json_path = session_folder / 'comparison_result.json'
+            
+            if json_path.exists():
+                with open(json_path, 'r', encoding='utf-8') as f:
+                    result_data = json.load(f)
+                
+                # アップロード画像のパスを取得
+                upload_folder = Path(UPLOAD_FOLDER) / session_id
+                original_images = []
+                if upload_folder.exists():
+                    original_images = [f.name for f in upload_folder.glob('*') if f.is_file()]
+                
+                sessions.append({
+                    'session_id': session_id,
+                    'timestamp': session_folder.stat().st_ctime,
+                    'result': result_data,
+                    'has_images': len(original_images) >= 2,
+                    'original_images': original_images[:2]  # 最初の2つの画像名
+                })
+        
+        return jsonify({'sessions': sessions})
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/cleanup')
 def manual_cleanup():
